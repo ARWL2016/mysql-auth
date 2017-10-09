@@ -1,6 +1,6 @@
 const mysql = require('mysql');
 const { connection } = require('./connection');
-const { generateHash, comparePassword } = require('../auth');
+const { generateHash, comparePassword, generateJWT } = require('../auth');
 const chalk = require('chalk');
 
 function addUser(username, password) {
@@ -13,6 +13,15 @@ function addUser(username, password) {
         if (error) console.log(error);
     
         console.log(chalk.green(`User was added with id ${results.insertId}`));
+
+        const {access, token } = generateJWT(results.insertId);
+
+        // add JWT to table 
+        // send back to user
+
+
+
+        console.log(access, token);
         connection.destroy();
       });
   }).catch(e => console.log('hashing error'));
@@ -45,10 +54,11 @@ function login(username, password) {
     if (error) {
       console.log('User not found');
     } else {
-      comparePassword(password, results[0].password).then(function(verified) {
-        console.log(`Passwords match: ${verified}`);
-        connection.destroy();
-      });
+      comparePassword(password, results[0].password)
+        .then(verified => {
+          console.log(`Passwords match: ${verified}`);
+          connection.destroy();
+        });
     }
   });
 
