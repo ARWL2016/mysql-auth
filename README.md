@@ -9,4 +9,4 @@ Functionality
 Needed
 - on login or registration, generate an auth token
 - add the auth token to the new table with the user id
-- make username unique
+- built out routes 
