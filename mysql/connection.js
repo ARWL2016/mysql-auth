@@ -1,6 +1,6 @@
 const mysql = require('mysql');
 
-const connection = mysql.createConnection({
+const db = mysql.createConnection({
   host: 'localhost', 
   port: 4000, 
   user: 'alistairrwillis', 
@@ -8,15 +8,15 @@ const connection = mysql.createConnection({
   database: 'auth'
 }); 
 
-connection.connect((err) => {
+db.connect((err) => {
   if (err) {
       console.log('error connecting: ' + err.stack);
       return;
   }
 
-  console.log(`connected to ${connection.config.host}:${connection.config.port} with ID: ${connection.threadId}`);
+  console.log(`connected to ${db.config.host}:${db.config.port} with ID: ${db.threadId}`);
 });
 
 module.exports = {
-  connection
+  db
 }

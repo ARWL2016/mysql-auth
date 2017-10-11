@@ -1,7 +1,13 @@
 const mysql = require('mysql');
-const { connection } = require('./connection');
+const { db } = require('./connection');
 const { generateHash, comparePassword, generateJWT } = require('../auth');
 const chalk = require('chalk');
+
+var Promise = require("bluebird");
+// Note that the library's classes are not properties of the main export
+// so we require and promisifyAll them manually
+Promise.promisifyAll(require("mysql/lib/Connection").prototype);
+Promise.promisifyAll(require("mysql/lib/Pool").prototype);
 
 function register(username, password) {
   generateHash(password)
@@ -9,7 +15,7 @@ function register(username, password) {
       const sql_user = "INSERT INTO auth.user VALUES (DEFAULT, ?, ?)";
       const inserts = [username, hash];
     
-      connection.query(sql_user, inserts, (e, results, fields) => {
+      db.query(sql_user, inserts, (e, results, fields) => {
         if (e) {
           return console.log('User could not be added', e);
         }
@@ -20,30 +26,35 @@ function register(username, password) {
         const sql_token = "INSERT INTO auth.tokens VALUES (DEFAULT, ?, ?, ?)"; 
         const inserts = [userId, access, token];
 
-        connection.query(sql_token, inserts, (e, results, fields) => {
+        db.query(sql_token, inserts, (e, results, fields) => {
           if (e) {
             return console.log('token could not be added', e);
           }
           console.log('token added to db', token);
-          connection.destroy();
+          db.destroy();
         });
       });
   }).catch(e => console.log('hashing error'));
   
 }
 
+
 function deleteUser(username) {
-  const sql = "DELETE FROM auth.user WHERE username=?";
+  const sql = "DELETE FROM auth.use WHERE username=?";
   const inserts = [username];
 
-  connection.query(sql, inserts, (error, results, fields) => {
-    if (error) {
-      console.log(error);
-    } else {
-      console.log(chalk.green(`User deleted`));
-      connection.destroy();
-    }
-  });
+  db.queryAsync(sql, inserts)
+    .then(res => {
+      const message = (res.affectedRows > 0) ? 'User deleted' : 'User did not exist';
+      console.log(chalk.green(message));
+      next();
+
+    }).catch(e => next(e));
+}
+
+function next(e) {
+  console.log(e);
+  db.destroy();
 }
 
 function login(username, password) {
@@ -55,13 +66,13 @@ function login(username, password) {
   const sql = "SELECT iduser, username, password FROM auth.user WHERE username=?";
   const inserts = [username];
 
-  connection.query(sql, inserts, (error, results, fields) => {
+  db.query(sql, inserts, (error, results, fields) => {
     if (error) {
       console.log('db error');
-      connection.destroy();
+      db.destroy();
     } else if (!results.length) {
       console.log('username not found');
-      connection.destroy();
+      db.destroy();
     } else {
       comparePassword(password, results[0].password)
       .then(verified => {
@@ -75,17 +86,17 @@ function login(username, password) {
         const sql_token = "INSERT INTO auth.tokens VALUES (DEFAULT, ?, ?, ?)"; 
         const inserts = [userId, access, token];
 
-        connection.query(sql_token, inserts, (e, results, fields) => {
+        db.query(sql_token, inserts, (e, results, fields) => {
           if (e) {
             return console.log('token could not be added', e);
           }
           console.log('token added to db', token);
-          connection.destroy();
+          db.destroy();
         });
 
       }).catch(e => {
         console.log('CAUGHT ERROR', e);
-        connection.destroy();
+        db.destroy();
       })
     }
   });
@@ -100,13 +111,13 @@ function checkUsernameExists(username) {
   const sql = "SELECT username FROM auth.user WHERE username=?";
   const inserts = [username];
 
-  connection.query(sql, inserts, (error, results, fields) => {
+  db.query(sql, inserts, (error, results, fields) => {
     if (error) {
       console.log(error);
     } else {
       console.log(results.length !== 0);
     }
-    connection.destroy();
+    db.destroy();
   });
 }
 
