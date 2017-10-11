@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "2.4.3",
+    "bluebird": "3.5.1",
     "chalk": "2.1.0",
     "express": "4.16.1",
     "jsonwebtoken": "8.0.1",
