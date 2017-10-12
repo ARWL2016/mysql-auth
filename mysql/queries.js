@@ -2,39 +2,46 @@ const mysql = require('mysql');
 const { db } = require('./connection');
 const { generateHash, comparePassword, generateJWT } = require('../auth');
 const chalk = require('chalk');
+const util = require('util');
 const Promise = require("bluebird");
 // Note that the library's classes are not properties of the main export
 // so we require and promisifyAll them manually
 Promise.promisifyAll(require("mysql/lib/Connection").prototype);
 // Promise.promisifyAll(require("mysql/lib/Pool").prototype);
 
+const sql = {
+  selectUsername: "SELECT username FROM auth.user WHERE username=?", 
+  insertUsername: "INSERT INTO auth.user VALUES (DEFAULT, ?, ?)", 
+  insertToken: "INSERT INTO auth.token VALUES (DEFAULT, ?, ?, ?)"
+}
+
 function register(username, password) {
-  generateHash(password)
-    .then(hash => {
-      const sql_user = "INSERT INTO auth.user VALUES (DEFAULT, ?, ?)";
-      const inserts = [username, hash];
-    
-      db.query(sql_user, inserts, (e, results, fields) => {
-        if (e) {
-          return console.log('User could not be added', e);
-        }
-        const userId = results.insertId;
-        console.log(chalk.green(`User was added with id ${userId}`));
+  if (!username) {
+    return console.log('enter a username');
+  }
 
-        const { access, token } = generateJWT(userId);
-        const sql_token = "INSERT INTO auth.token VALUES (DEFAULT, ?, ?, ?)"; 
-        const inserts = [userId, access, token];
+  db.queryAsync(sql.selectUsername, [username])
+    .then(rows => {
+      if (rows.length === 1) {
+        console.log('Username exists'); 
+        return next();
+      } 
+      return generateHash(password)
+        .then(hash => {
+          return db.queryAsync(sql.insertUsername, [username, hash]);
+            
+      }).then(rows => {
+          const userId = rows.insertId;
+          console.log(chalk.green(`User was added with id ${userId}`));
+          const { access, token } = generateJWT(userId);
 
-        db.query(sql_token, inserts, (e, results, fields) => {
-          if (e) {
-            return console.log('token could not be added', e);
-          }
-          console.log('token added to db', token);
-          db.destroy();
-        });
-      });
-  }).catch(e => console.log('hashing error'));
-  
+          return db.queryAsync(sql.insertToken, [userId, access, token])
+            .then((rows) => {
+              console.log('token added to db', token);
+              next();
+            });
+      })
+    }).catch(e => next(e));
 }
 
 function deleteUser(username) {
@@ -114,7 +121,7 @@ function checkUsernameExists(username) {
 
 
 function next(e) {
-  if (e) console.log('CAUGHT ERROR', e);
+  if (e) console.log('CAUGHT ERROR', util.inspect(e));
   db.destroy();
 }
 
