@@ -1,34 +1,20 @@
-const { register, deleteUser, login, checkUsernameExists } = require('./mysql/queries');
+const express = require('express');
+const path = require('path');
+const bodyParser = require('body-parser');
 const chalk = require('chalk');
+const routes = require('./routes');
 
-const args = process.argv; 
+const app = express(); 
 
-const method = args[2];
-const username = args[3];
-const password = args[4];
+let port = process.env.PORT || 3000;
 
-console.log(chalk.red(`${method} ${username}`));
+app.use(bodyParser.json());
 
-switch (method) {
-  case 'add':
-  case 'register': 
-  case 'reg':  
-    register(username, password);
-    break;
-  case 'del': 
-  case 'delete': 
-  case 'rem': 
-  case 'remove': 
-    deleteUser(username);
-    break;
-  case 'login': 
-    login(username, password);
-    break;
-  case 'check':
-    checkUsernameExists(username); 
-    break;
-  default: 
-    console.log('unknown method');
-}
+routes(app);
+
+app.listen(port, () => {
+  console.log(chalk.green(`APP.JS: Running on PORT ${port}`))
+});
+
 
 

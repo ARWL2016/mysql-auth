@@ -9,3 +9,5 @@ Functionality
 Needed
 - convert all to promises
 - built out routes 
+- add config files 
+- add tests for routes
