@@ -7,6 +7,5 @@ Functionality
 - check hash
 
 Needed
-- on login or registration, generate an auth token
-- add the auth token to the new table with the user id
+- convert all to promises
 - built out routes 
