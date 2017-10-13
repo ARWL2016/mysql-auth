@@ -1,12 +1,8 @@
 const mysql = require('mysql');
-const { db } = require('./connection');
-const { generateHash, comparePassword, generateJWT } = require('../auth');
+const { db } = require('../db');
+const { generateHash, comparePassword, generateJWT } = require('../helpers/auth-helpers');
 const chalk = require('chalk');
-const util = require('util');
-const Promise = require("bluebird");
 
-Promise.promisifyAll(require("mysql/lib/Connection").prototype);
-// Promise.promisifyAll(require("mysql/lib/Pool").prototype);
 
 const sql = {
   selectUsername: "SELECT username FROM auth.user WHERE username=?", 
@@ -109,13 +105,15 @@ function login (req, res) {
 function checkUsernameExists(req, res) {
 
   const  { username } = req.body;
+  
   if (!username) {
     return res.status(400).send({error: "username expected"});
   }
 
   db.queryAsync(sql.usernameExists, [username])
     .then(rows => {
-      res.status(200).send(rows.length > 0);
+      const response = rows.length > 0;
+      res.status(200).json({response});
     })
     .catch(e => next(e));
 }

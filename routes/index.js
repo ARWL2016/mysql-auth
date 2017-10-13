@@ -1,4 +1,4 @@
-const { register, deleteUser, login, checkUsernameExists } = require('../mysql/queries');
+const { register, deleteUser, login, checkUsernameExists } = require('../controllers/auth-controller');
 
 module.exports = (app) => {
   app.post('/api/auth/register', register); 

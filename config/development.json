@@ -1,0 +1,8 @@
+{
+  "PORT": "3000", 
+  "DB_HOST": "localhost", 
+  "DB_PORT": "4000", 
+  "DB_USER": "alistairrwillis",
+  "DB_PASSWORD": "Mko0987uj??", 
+  "DB_DATABASE": "auth"
+}

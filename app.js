@@ -1,20 +1,29 @@
-const express = require('express');
-const path = require('path');
-const bodyParser = require('body-parser');
-const chalk = require('chalk');
-const routes = require('./routes');
+require('./config');
 
-const app = express(); 
+const express = require('express'),
+path = require('path'),
+bodyParser = require('body-parser'),
+chalk = require('chalk'),
+routes = require('./routes'),
 
+app = express(); 
 let port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
+app.get('/', (req, res) => {
+  res.status(200).send({message: 'Authentication app is running'});
+}); 
+
 routes(app);
 
-app.listen(port, () => {
-  console.log(chalk.green(`APP.JS: Running on PORT ${port}`))
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(port, () => {
+    console.log(chalk.green(`APP.JS: Running on PORT ${port}`))
+  });
+}
+
+module.exports = { app };
 
 
 

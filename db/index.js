@@ -1,12 +1,17 @@
 const mysql = require('mysql');
 const chalk = require('chalk');
 
+const Promise = require("bluebird");
+
+Promise.promisifyAll(require("mysql/lib/Connection").prototype);
+// Promise.promisifyAll(require("mysql/lib/Pool").prototype);
+
 const db = mysql.createConnection({
-  host: 'localhost', 
-  port: 4000, 
-  user: 'alistairrwillis', 
-  password: 'mko0987uj??', 
-  database: 'auth'
+  host: process.env.DB_HOST, 
+  port: process.env.DB_PORT, 
+  user: process.env.DB_USER, 
+  password: process.env.DB_PASSWORD, 
+  database: process.env.DB_DATABASE
 }); 
 
 db.connect(err => {
