@@ -9,7 +9,8 @@ const sql = {
   insertToken: "INSERT INTO token VALUES (DEFAULT, ?, ?, ?)", 
   usernameExists: "SELECT username FROM user WHERE username=?", 
   deleteUser: "DELETE user, token FROM user INNER JOIN token WHERE user.username = ? AND token.userId = user.id;", 
-  selectUser: "SELECT id, username, password FROM user WHERE username=?"
+  selectUser: "SELECT id, username, password FROM user WHERE username=?", 
+  checkTokenExists: "SELECT token FROM token WHERE userId=?"
 }
 
 const promiseCache = {
@@ -86,14 +87,23 @@ function login (req, res) {
       if (!result) {
         return res.status(400).send({error: 'incorrect password'});
       } 
-      const jwt = generateJWT(userId);
-      const { access } = jwt;
-      promiseCache.token = jwt.token; 
+      // check if JWT already available 
+      return db.queryAsync(sql.checkTokenExists, [userId]);
+    })
+    .then(rows => {
+        if (rows.length) {
+          return res.header('X-Auth', rows[0].token);
+        } 
 
-      return db.query(sql.insertToken, [userId, access, promiseCache.token]);
+        const jwt = generateJWT(userId);
+        const { access } = jwt;
+        promiseCache.token = jwt.token; 
+        res.header('X-Auth', promiseCache.token);
+  
+        return db.query(sql.insertToken, [userId, access, promiseCache.token]);
     })
     .then(() => {
-      return res.header('X-Auth', promiseCache.token).send(promiseCache.username);
+      return res.send({username: promiseCache.username});
     })
     .catch(e => {
       console.log(e);
