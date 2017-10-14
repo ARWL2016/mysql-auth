@@ -1,12 +1,13 @@
 require('./config');
 
 const express = require('express'),
-path = require('path'),
-bodyParser = require('body-parser'),
-chalk = require('chalk'),
-routes = require('./routes'),
+  path = require('path'),
+  bodyParser = require('body-parser'),
+  chalk = require('chalk'),
+  routes = require('./routes'),
 
-app = express(); 
+  app = express(); 
+  
 let port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
@@ -19,7 +20,7 @@ routes(app);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {
-    console.log(chalk.green(`APP.JS: Running on PORT ${port}`))
+    console.log(chalk.green(`MySQL-Auth: Running on PORT ${port}`))
   });
 }
 

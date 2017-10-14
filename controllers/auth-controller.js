@@ -7,6 +7,7 @@ const sql = {
   selectUsername: "SELECT username FROM user WHERE username=?", 
   insertCredentials: "INSERT INTO user VALUES (DEFAULT, ?, ?)", 
   insertToken: "INSERT INTO token VALUES (DEFAULT, ?, ?, ?)", 
+  removeToken: "DELETE FROM token WHERE token=?",
   usernameExists: "SELECT username FROM user WHERE username=?", 
   deleteUser: "DELETE user, token FROM user INNER JOIN token WHERE user.username = ? AND token.userId = user.id;", 
   selectUser: "SELECT id, username, password FROM user WHERE username=?", 
@@ -30,13 +31,13 @@ function register(req, res) {
   db.queryAsync(sql.selectUsername, [username])
     .then(rows => {
       if (rows.length === 1) {
-        return res.status(409).send({error: 'username exists'}); 
+        return Promise.reject({code: 409, message: 'username exists'});
       } 
 
-      return generateHash(password)
+      return generateHash(password);
     })
     .then(hash => {
-        return db.queryAsync(sql.insertCredentials, [promiseCache.username, hash]);
+      return db.queryAsync(sql.insertCredentials, [promiseCache.username, hash]);
     })
     .then(rows => {
         const userId = rows.insertId;
@@ -47,10 +48,11 @@ function register(req, res) {
         return db.queryAsync(sql.insertToken, [userId, access, promiseCache.token])
     })
     .then(rows => {
-      return res.header('X-Auth', promiseCache.token).send({username: promiseCache.username});
+      res.header('X-Auth', promiseCache.token).send({username: promiseCache.username});
     })
     .catch(e => {
-      res.status(400).send({error: 'registration failed'});
+      const {code, message} = e;
+      res.status(500).send({message});
       console.log(e);
     });
 }
@@ -63,7 +65,10 @@ function deleteUser(req, res) {
     const message = (rows.affectedRows > 0) ? 'user was deleted' : 'user did not exist';
     res.status(200).send({message});
     
-  }).catch(e => next(e));
+  }).catch(e => {
+    console.log(e);
+    res.sendStatus(500);
+  });
 }
 
 function login (req, res) {
@@ -85,7 +90,7 @@ function login (req, res) {
     })
     .then(result => {
       if (!result) {
-        return res.status(400).send({error: 'incorrect password'});
+        Promise.reject({code: 400, message: 'incorrect password'});
       } 
       // check if JWT already available 
       return db.queryAsync(sql.checkTokenExists, [userId]);
@@ -107,9 +112,22 @@ function login (req, res) {
     })
     .catch(e => {
       console.log(e);
-      res.status(500).send({error: 'login failed'}); 
+      const {code, message} = e;
+      res.status(code).send({message}); 
     });
-  }
+}
+
+function logout(req, res) {
+  const { username, token } = req.body;
+
+  db.queryAsync(sql.removeToken, [token])
+    .then(() => {
+      res.status(200).send({success: `${username} was logged out`});
+    })
+    .catch(e => {
+      res.status(400).send({error: 'An error occured while logging out'}); 
+    });
+}
 
 function checkUsernameExists(req, res) {
 
@@ -127,10 +145,6 @@ function checkUsernameExists(req, res) {
     .catch(e => next(e));
 }
 
-function next(e) {
-  if (e) console.log('CAUGHT ERROR', e);
-}
-
-module.exports = { register, deleteUser, login, checkUsernameExists, sql };
+module.exports = { register, deleteUser, login, logout, checkUsernameExists, sql };
 
 
