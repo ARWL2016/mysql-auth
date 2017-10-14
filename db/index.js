@@ -20,7 +20,7 @@ db.connect(err => {
       return;
   }
 
-  console.log(chalk.green(`MYSQL: Connected to ${db.config.host}:${db.config.port} with ID: ${db.threadId}`));
+  console.log(chalk.green(`MySQL: Connected to ${db.config.host}:${db.config.port} \n`));
 });
 
 module.exports = {

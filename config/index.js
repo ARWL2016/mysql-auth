@@ -8,7 +8,7 @@ console.log(chalk.blue('-----------------------------'));
 if (env === 'development' ) {
   config = require('./development.json');
 } else if (env === 'test') {
-  config = require('./development.json');
+  config = require('./test.json');
 }
 
 Object.keys(config).forEach(key => {

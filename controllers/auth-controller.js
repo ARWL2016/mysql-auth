@@ -3,14 +3,13 @@ const { db } = require('../db');
 const { generateHash, comparePassword, generateJWT } = require('../helpers/auth-helpers');
 const chalk = require('chalk');
 
-
 const sql = {
-  selectUsername: "SELECT username FROM auth.user WHERE username=?", 
-  insertUsername: "INSERT INTO auth.user VALUES (DEFAULT, ?, ?)", 
-  insertToken: "INSERT INTO auth.token VALUES (DEFAULT, ?, ?, ?)", 
-  usernameExists: "SELECT username FROM auth.user WHERE username=?", 
+  selectUsername: "SELECT username FROM user WHERE username=?", 
+  insertCredentials: "INSERT INTO user VALUES (DEFAULT, ?, ?)", 
+  insertToken: "INSERT INTO token VALUES (DEFAULT, ?, ?, ?)", 
+  usernameExists: "SELECT username FROM user WHERE username=?", 
   deleteUser: "DELETE user, token FROM user INNER JOIN token WHERE user.username = ? AND token.userId = user.id;", 
-  selectUser: "SELECT id, username, password FROM auth.user WHERE username=?"
+  selectUser: "SELECT id, username, password FROM user WHERE username=?"
 }
 
 const promiseCache = {
@@ -36,7 +35,7 @@ function register(req, res) {
       return generateHash(password)
     })
     .then(hash => {
-        return db.queryAsync(sql.insertUsername, [promiseCache.username, hash]);
+        return db.queryAsync(sql.insertCredentials, [promiseCache.username, hash]);
     })
     .then(rows => {
         const userId = rows.insertId;
@@ -47,7 +46,7 @@ function register(req, res) {
         return db.queryAsync(sql.insertToken, [userId, access, promiseCache.token])
     })
     .then(rows => {
-      return res.header('X-Auth', promiseCache.token).send(promiseCache.username);
+      return res.header('X-Auth', promiseCache.token).send({username: promiseCache.username});
     })
     .catch(e => {
       res.status(400).send({error: 'registration failed'});
@@ -61,7 +60,7 @@ function deleteUser(req, res) {
   db.queryAsync(sql.deleteUser, [username])
   .then(rows => {
     const message = (rows.affectedRows > 0) ? 'user was deleted' : 'user did not exist';
-    res.status(200).send(message);
+    res.status(200).send({message});
     
   }).catch(e => next(e));
 }
@@ -105,7 +104,7 @@ function login (req, res) {
 function checkUsernameExists(req, res) {
 
   const  { username } = req.body;
-  
+  console.log({username});
   if (!username) {
     return res.status(400).send({error: "username expected"});
   }
@@ -122,6 +121,6 @@ function next(e) {
   if (e) console.log('CAUGHT ERROR', e);
 }
 
-module.exports = { register, deleteUser, login, checkUsernameExists };
+module.exports = { register, deleteUser, login, checkUsernameExists, sql };
 
 
